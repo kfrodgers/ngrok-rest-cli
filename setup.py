@@ -13,7 +13,7 @@ with open("requirements.txt") as requirements:
     install_requires = requirements.readlines()
 
 setup(
-    name='ngrok-rest-cli',
+    name='ngrok_rest_cli',
     version='0.1.0',
     description='Simple ngrok CLI',
     long_description=long_description,
@@ -31,10 +31,10 @@ setup(
     packages=find_packages(exclude=['test*']),
     scripts=[],
     entry_points={
-        'console_scripts': ['ngrok_get = commands:get_tunnels',
-                            'ngrok_start = commands:start_tunnel',
-                            'ngrok_stop = commands:delete_tunnel',
-                            'ngrok_requests = commands:list_requests']
+        'console_scripts': ['ngrok_get = ngrok_rest_cli.ngrok_commands:get_tunnels',
+                            'ngrok_start = ngrok_rest_cli.ngrok_commands:start_tunnel',
+                            'ngrok_stop = ngrok_rest_cli.ngrok_commands:delete_tunnel',
+                            'ngrok_requests = ngrok_rest_cli.ngrok_commands:list_requests']
     },
     install_requires=install_requires,
     data_files=[]

@@ -7,14 +7,15 @@ import getopt
 import rest_client
 
 
-class NgrokCommError(Exception):
-    def __init__(self, message):
-        self.message = message
-        super(NgrokCommError, self).__init__(message)
-
-
 def print_to_err(message):
     sys.stderr.write(message + '\n')
+
+
+def print_response_err(status, response):
+    if 'details' in response and 'err' in response.get('details'):
+        print_to_err(response.get('details').get('err'))
+    else:
+        print_to_err('Status(%d): %r' % (status, response))
 
 
 def get_tunnels():
@@ -38,8 +39,8 @@ def get_tunnels():
 
     status, response = rest_client.get_url(url)
     if status != 200:
-        print_to_err(repr(response))
-        raise NgrokCommError('GET failed, %d' % status)
+        print_response_err(status, response)
+        sys.exit(1)
 
     print json.dumps(response, indent=4)
 
@@ -81,8 +82,8 @@ def start_tunnel():
 
     status, response = rest_client.post_url('api/tunnels', params=params)
     if status != 201:
-        print_to_err(repr(response))
-        raise NgrokCommError('POST failed, %d' % status)
+        print_response_err(status, response)
+        sys.exit(1)
 
     print json.dumps(response, indent=4)
 
@@ -108,8 +109,8 @@ def delete_tunnel():
 
     status, response = rest_client.delete_url('api/tunnels/%s' % name)
     if status != 204:
-        print_to_err(repr(response))
-        raise NgrokCommError('DEL failed, %d' % status)
+        print_response_err(status, response)
+        sys.exit(1)
 
     print json.dumps(response, indent=4)
 
@@ -117,8 +118,8 @@ def delete_tunnel():
 def list_requests():
     status, response = rest_client.get_url('api/requests/http')
     if status != 200:
-        print_to_err(repr(response))
-        raise NgrokCommError('GET failed, %d' % status)
+        print_response_err(status, response)
+        sys.exit(1)
 
     print json.dumps(response, indent=4)
 
