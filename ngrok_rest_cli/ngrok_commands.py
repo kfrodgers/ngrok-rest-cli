@@ -7,6 +7,10 @@ import getopt
 import rest_client
 
 
+def print_to_out(message):
+    sys.stdout.write(message + '\n')
+
+
 def print_to_err(message):
     sys.stderr.write(message + '\n')
 
@@ -15,22 +19,40 @@ def print_response_err(status, response):
     if 'details' in response and 'err' in response.get('details'):
         print_to_err(response.get('details').get('err'))
     else:
-        print_to_err('Status(%d): %r' % (status, response))
+        msg = ['Status (%d): {' % status]
+        for key in sorted(response.keys()):
+            msg.append('    %s: %r' % (key, response[key]))
+        msg.append('}')
+        print_to_err('\n'.join(msg))
+
+
+def remove_metrics(response):
+    if 'tunnels' in response:
+        for tunnel in response['tunnels']:
+            if 'metrics' in tunnel:
+                del tunnel['metrics']
+    elif 'metrics' in response:
+        del response['metrics']
 
 
 def get_tunnels():
+    usage = 'Usage: %s [-n <name>] [-m]' % sys.argv[0]
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'n:', [])
+        options, remainder = getopt.getopt(sys.argv[1:], 'n:m', [])
     except getopt.GetoptError as err:
         print_to_err(str(err))
         sys.exit(1)
 
     name = None
+    show_metrics = False
     for opt, arg in options:
         if opt == '-n':
             name = arg
+        elif opt == '-m':
+            show_metrics = True
         else:
             print_to_err('%s: Invalid option' % opt)
+            print_to_err(usage)
             sys.exit(1)
 
     url = 'api/tunnels'
@@ -42,12 +64,16 @@ def get_tunnels():
         print_response_err(status, response)
         sys.exit(1)
 
-    print json.dumps(response, indent=4)
+    if not show_metrics:
+        remove_metrics(response)
+
+    print_to_out(json.dumps(response, indent=4))
 
 
 def start_tunnel():
+    usage = 'Usage: %s -n <name> [-h <host>] [-p <port>] [-t <tcp|http>] [-r <remote_addr>] ' % sys.argv[0]
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'n:h:p:P:r:', [])
+        options, remainder = getopt.getopt(sys.argv[1:], 'n:h:p:t:r:', [])
     except getopt.GetoptError as err:
         print_to_err(str(err))
         sys.exit(1)
@@ -55,7 +81,7 @@ def start_tunnel():
     name = None
     host = '127.0.0.1'
     port = 80
-    proto = 'http'
+    tunnel = 'http'
     remote_addr = None
     for opt, arg in options:
         if opt == '-n':
@@ -64,19 +90,26 @@ def start_tunnel():
             host = arg
         elif opt == '-p':
             port = int(arg)
-        elif opt == '-P':
-            proto = arg
+        elif opt == '-t':
+            tunnel = arg
         elif opt == 'r':
             remote_addr = arg
         else:
             print_to_err('%s: Invalid option' % opt)
+            print_to_err(usage)
             sys.exit(1)
 
     if name is None:
-        print_to_err('Must specify a name')
+        print_to_err('Error: Must specify a name')
+        print_to_err(usage)
         sys.exit(2)
 
-    params = dict(name=name, addr='%s:%d' % (host, port), proto=proto)
+    if tunnel not in ['http', 'tcp']:
+        print_to_err('Error: Invalid tunnel type (%s), use http or tcp' % tunnel)
+        print_to_err(usage)
+        sys.exit(2)
+
+    params = dict(name=name, addr='%s:%d' % (host, port), proto=tunnel)
     if remote_addr is not None:
         params['remote_addr'] = remote_addr
 
@@ -85,10 +118,13 @@ def start_tunnel():
         print_response_err(status, response)
         sys.exit(1)
 
-    print json.dumps(response, indent=4)
+    remove_metrics(response)
+
+    print_to_out(json.dumps(response, indent=4))
 
 
 def delete_tunnel():
+    usage = 'Usage: %s -n <name>' % sys.argv[0]
     try:
         options, remainder = getopt.getopt(sys.argv[1:], 'n:', [])
     except getopt.GetoptError as err:
@@ -101,10 +137,12 @@ def delete_tunnel():
             name = arg
         else:
             print_to_err('%s: Invalid option' % opt)
+            print_to_err(usage)
             sys.exit(1)
 
     if name is None:
-        print_to_err('Must specify a name')
+        print_to_err('Error: Must specify a name')
+        print_to_err(usage)
         sys.exit(2)
 
     status, response = rest_client.delete_url('api/tunnels/%s' % name)
@@ -112,7 +150,11 @@ def delete_tunnel():
         print_response_err(status, response)
         sys.exit(1)
 
-    print json.dumps(response, indent=4)
+    # remove the auto generated http tunnel if it exists, ignore return status
+    if not name.endswith(' (http)'):
+        rest_client.delete_url('api/tunnels/%s (http)' % name)
+
+    print_to_out('%s deleted' % name)
 
 
 def list_requests():
@@ -121,7 +163,7 @@ def list_requests():
         print_response_err(status, response)
         sys.exit(1)
 
-    print json.dumps(response, indent=4)
+    print_to_out(json.dumps(response, indent=4))
 
 
 if __name__ == '__main__':

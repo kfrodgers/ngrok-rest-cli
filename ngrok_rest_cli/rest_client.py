@@ -3,6 +3,9 @@
 # Please see http://www.gnu.org/licenses
 import requests
 import json
+import os
+
+_web_address = os.getenv('NGROK_WEB_ADDR', 'http://127.0.0.1:4040')
 
 
 class RestClientError(Exception):
@@ -13,7 +16,7 @@ class RestClientError(Exception):
 
 
 def _build_url(url_route=''):
-    return 'http://127.0.0.1:4040/%s' % url_route
+    return '%s/%s' % (_web_address, url_route)
 
 
 def post_url(url_route, params):
