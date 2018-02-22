@@ -12,6 +12,9 @@ with codecs.open('DESCRIPTION.rst', encoding='utf-8') as f:
 with open("requirements.txt") as requirements:
     install_requires = requirements.readlines()
 
+with open("README.txt", "w") as readme:
+    readme.write(long_description)
+
 setup(
     name='ngrok_rest_cli',
     version='0.1.0',
