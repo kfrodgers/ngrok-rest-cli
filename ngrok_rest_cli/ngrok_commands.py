@@ -92,7 +92,7 @@ def start_tunnel():
             port = int(arg)
         elif opt == '-t':
             tunnel = arg
-        elif opt == 'r':
+        elif opt == '-r':
             remote_addr = arg
         else:
             print_to_err('%s: Invalid option' % opt)
