@@ -8,13 +8,6 @@ import os
 _web_address = os.getenv('NGROK_WEB_ADDR', 'http://127.0.0.1:4040')
 
 
-class RestClientError(Exception):
-    def __init__(self, message, status):
-        self.message = message
-        self.status = status
-        super(RestClientError, self).__init__(message)
-
-
 def _build_url(url_route=''):
     return '%s/%s' % (_web_address, url_route)
 
@@ -32,7 +25,8 @@ def post_url(url_route, params):
         else:
             response = req.json()
     except Exception as e:
-        raise RestClientError(str(e), 401)
+        status_code = 401
+        response = dict(status_code=status_code, error=str(e))
     return status_code, response
 
 
@@ -48,7 +42,8 @@ def put_url(url_route, params=None):
         else:
             response = req.json()
     except Exception as e:
-        raise RestClientError(str(e), 400)
+        status_code = 400
+        response = dict(status_code=status_code, error=str(e))
     return status_code, response
 
 
@@ -62,7 +57,8 @@ def get_url(url_route):
         else:
             response = data.json()
     except Exception as e:
-        raise RestClientError(str(e), 404)
+        status_code = 404
+        response = dict(status_code=status_code, error=str(e))
     return status_code, response
 
 
@@ -79,5 +75,6 @@ def delete_url(url_route):
         else:
             response = {'data': ''}
     except Exception as e:
-        raise RestClientError(str(e), 401)
+        status_code = 401
+        response = dict(status_code=status_code, error=str(e))
     return status_code, response
